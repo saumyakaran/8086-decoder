@@ -1,0 +1,14 @@
+# macOS debug symbols
+*.dSYM/
+
+# binaries
+*.out
+*.exe
+*.o
+*.a
+*.so
+
+# local builds
+main
+decoder
+build/
