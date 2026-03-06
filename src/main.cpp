@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <string_view>
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -12,7 +13,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (argc == 2 && std::string(argv[1]) == "--help") {
+  if (argc == 2 && std::string_view(argv[1]) == "--help") {
     std::cout << "\n  \033[1m\033[4m8086 Decoder\033[0m\n\n";
     std::cout << "  \033[1mUsage:\033[0m ";
     std::cout << "decode8086 <binary filepath>\n\n";
@@ -28,7 +29,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  std::cout << argc << ", " << argv << "\n";
+  std::cout << argc << ", " << argv[1] << "\n";
 
   return 0;
 }
