@@ -1,9 +1,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <ios>
 #include <string_view>
 
+void display_success_badge() { printf("\n  [\033[1;32mSUCCESS\033[0m]: "); }
 void display_error_badge() { printf("\n  [\033[1;31mERROR\033[0m]: "); }
 void display_usage_instruction() {
   printf("  \033[1mUsage:\033[0m ");
@@ -58,7 +58,17 @@ int main(int argc, char *argv[]) {
     total_bytes_read += bytes_read;
 
     if (bytes_read == 0) {
-      break;
+      if (feof(f)) {
+        printf("\n");
+        display_success_badge();
+        printf("Finished reading file.\n");
+        break;
+      }
+      if (ferror(f)) {
+        display_error_badge();
+        printf("read error\n\n");
+        return 1;
+      }
     }
 
     for (size_t i{0}; i < bytes_read; ++i) {
@@ -71,9 +81,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  printf("\n\n  filesize: %zu\n  total_bytes_read: %zu\n\n", filesize,
-         total_bytes_read);
   fclose(f);
+
+  printf("\n  filesize: %zu\n  total_bytes_read: %zu\n\n", filesize,
+         total_bytes_read);
 
   return 0;
 }
