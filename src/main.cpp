@@ -51,23 +51,25 @@ int main(int argc, char *argv[]) {
   rewind(f);
 
   uint8_t buf[4096];
+  constexpr size_t buf_size = sizeof(buf);
   size_t total_bytes_read{0};
 
   while (true) {
-    const size_t bytes_read = fread(buf, 1, sizeof(buf), f);
+    const size_t bytes_read = fread(buf, 1, buf_size, f);
     total_bytes_read += bytes_read;
 
-    if (bytes_read == 0) {
+    if (bytes_read < buf_size) {
+      if (ferror(f)) {
+        display_error_badge();
+        printf("read error\n\n");
+        return 1;
+      }
+
       if (feof(f)) {
         printf("\n");
         display_success_badge();
         printf("Finished reading file.\n");
         break;
-      }
-      if (ferror(f)) {
-        display_error_badge();
-        printf("read error\n\n");
-        return 1;
       }
     }
 
