@@ -58,21 +58,6 @@ int main(int argc, char *argv[]) {
     const size_t bytes_read = fread(buf, 1, buf_size, f);
     total_bytes_read += bytes_read;
 
-    if (bytes_read < buf_size) {
-      if (ferror(f)) {
-        display_error_badge();
-        printf("read error\n\n");
-        return 1;
-      }
-
-      if (feof(f)) {
-        printf("\n");
-        display_success_badge();
-        printf("Finished reading file.\n");
-        break;
-      }
-    }
-
     for (size_t i{0}; i < bytes_read; ++i) {
       if (i % 8 == 0)
         printf("\n  ");
@@ -80,6 +65,20 @@ int main(int argc, char *argv[]) {
         printf(" ");
 
       printf("%02x ", buf[i]);
+    }
+
+    if (bytes_read < buf_size) {
+      if (ferror(f)) {
+        display_error_badge();
+        printf("read error\n\n");
+        return 1;
+      }
+      if (feof(f)) {
+        printf("\n");
+        display_success_badge();
+        printf("Finished reading file.\n");
+        break;
+      }
     }
   }
 
