@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <ios>
 #include <string_view>
 
 void display_error_badge() { printf("\n  [\033[1;31mERROR\033[0m]: "); }
@@ -45,20 +46,33 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  fseek(f, 0, SEEK_END);
+  size_t filesize = ftell(f);
+  rewind(f);
+
   uint8_t buf[4096];
-  const size_t bytes_read = fread(buf, 1, sizeof(buf), f);
-  printf("\n  bytes_read: %zu\n", bytes_read);
+  size_t total_bytes_read{0};
 
-  for (size_t i{0}; i < bytes_read; ++i) {
-    if (i % 8 == 0)
-      printf("\n  ");
-    else if (i % 4 == 0)
-      printf(" ");
+  while (true) {
+    const size_t bytes_read = fread(buf, 1, sizeof(buf), f);
+    total_bytes_read += bytes_read;
 
-    printf("%02x ", buf[i]);
+    if (bytes_read == 0) {
+      break;
+    }
+
+    for (size_t i{0}; i < bytes_read; ++i) {
+      if (i % 8 == 0)
+        printf("\n  ");
+      else if (i % 4 == 0)
+        printf(" ");
+
+      printf("%02x ", buf[i]);
+    }
   }
 
-  printf("\n\n");
+  printf("\n\n  filesize: %zu\n  total_bytes_read: %zu\n\n", filesize,
+         total_bytes_read);
   fclose(f);
 
   return 0;
