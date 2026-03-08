@@ -1,6 +1,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <string_view>
 
 void display_success_badge() { printf("\n  [\033[1;32mSUCCESS\033[0m]: "); }
@@ -9,6 +10,11 @@ void display_usage_instruction() {
   printf("  \033[1mUsage:\033[0m ");
   printf("decode8086 <binary filepath>\n\n");
 }
+
+bool isMov(uint8_t byte) { return (byte & 0b11111100) == 0b10001000; }
+bool isRegToReg(uint8_t byte) { return (byte & 0b11000000) == 0b11000000; }
+bool isByteOp(uint8_t byte) { return (byte & 0b00000001) == 0; }
+bool isRegSource(uint8_t byte) { return (byte & 0b00000010) == 0; }
 
 int main(int argc, char *argv[]) {
   bool help_requested = argc == 2 && std::string_view(argv[1]) == "--help";
@@ -50,7 +56,7 @@ int main(int argc, char *argv[]) {
   size_t filesize = ftell(f);
   rewind(f);
 
-  uint8_t buf[4096];
+  uint8_t buf[4096]{};
   constexpr size_t buf_size = sizeof(buf);
   size_t total_bytes_read{0};
 
@@ -58,13 +64,50 @@ int main(int argc, char *argv[]) {
     const size_t bytes_read = fread(buf, 1, buf_size, f);
     total_bytes_read += bytes_read;
 
-    for (size_t i{0}; i < bytes_read; ++i) {
-      if (i % 8 == 0)
-        printf("\n  ");
-      else if (i % 4 == 0)
-        printf(" ");
+    size_t cursor{0};
+    while (cursor < bytes_read) {
+      const uint8_t byte = buf[cursor];
+      cursor += 1;
 
-      printf("%02x ", buf[i]);
+      char instruction[64]{};
+      // TODO: Implement a write utility using a cursor for better
+      // performance, strcat scans the instruction for `\0` everytime it is
+      // called which is unnecessary overhead
+      if (isMov(byte)) {
+        strcat(instruction, "mov ");
+
+        const uint8_t next_byte = buf[cursor];
+        cursor += 1;
+
+        if (isRegToReg(next_byte)) {
+          const char *byte_reg[8]{"al", "cl", "dl", "bl",
+                                  "ah", "ch", "dh", "bh"};
+          const char *word_reg[8]{"ax", "cx", "dx", "bx",
+                                  "sp", "bp", "si", "di"};
+
+          const char *(*register_table)[8] =
+              isByteOp(byte) ? &byte_reg : &word_reg;
+
+          uint8_t reg_index = (next_byte & 0b00111000) >> 3;
+          uint8_t r_m_index = next_byte & 0b00000111;
+
+          const char *r_m = (*register_table)[r_m_index];
+          const char *reg = (*register_table)[reg_index];
+          if (isRegSource(byte)) {
+            strcat(instruction, r_m);
+            strcat(instruction, ", ");
+            strcat(instruction, reg);
+          } else {
+            strcat(instruction, reg);
+            strcat(instruction, ", ");
+            strcat(instruction, r_m);
+          }
+          strcat(instruction, "\n");
+        }
+      } else
+        strcat(instruction, "tbd\n");
+
+      printf("%s", instruction);
     }
 
     if (bytes_read < buf_size) {
