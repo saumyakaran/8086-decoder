@@ -12,3 +12,6 @@
 main
 decoder
 build/
+
+# generated assembly output
+*.s
