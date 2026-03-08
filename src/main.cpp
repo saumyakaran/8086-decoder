@@ -2,12 +2,13 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <string_view>
 
-void display_success_badge() { printf("\n  [\033[1;32mSUCCESS\033[0m]: "); }
-void display_error_badge() { printf("\n  [\033[1;31mERROR\033[0m]: "); }
+void display_success_badge() { printf("\n[\033[1;32mSUCCESS\033[0m]: "); }
+void display_error_badge() { printf("\n[\033[1;31mERROR\033[0m]: "); }
 void display_usage_instruction() {
-  printf("  \033[1mUsage:\033[0m ");
+  printf("\033[1mUsage:\033[0m ");
   printf("decode8086 <binary filepath>\n\n");
 }
 
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
   bool multi_args = argc > 2;
 
   if (help_requested) {
-    printf("\n  \033[1m\033[4m8086 Decoder\033[0m\n\n");
+    printf("\n\033[1m\033[4m8086 Decoder\033[0m\n\n");
     display_usage_instruction();
 
     return 0;
@@ -56,6 +57,9 @@ int main(int argc, char *argv[]) {
   size_t filesize = ftell(f);
   rewind(f);
 
+  auto name = std::filesystem::path(argv[1]).filename();
+  printf("; %s disassembly:\n\nbits 16\n\n", name.c_str());
+
   uint8_t buf[4096]{};
   constexpr size_t buf_size = sizeof(buf);
   size_t total_bytes_read{0};
@@ -79,17 +83,25 @@ int main(int argc, char *argv[]) {
         const uint8_t next_byte = buf[cursor];
         cursor += 1;
 
-        if (isRegToReg(next_byte)) {
-          const char *byte_reg[8]{"al", "cl", "dl", "bl",
-                                  "ah", "ch", "dh", "bh"};
-          const char *word_reg[8]{"ax", "cx", "dx", "bx",
-                                  "sp", "bp", "si", "di"};
+        const char *byte_reg[8]{"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
+        const char *word_reg[8]{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
 
+        uint8_t reg_index = (next_byte & 0b00111000) >> 3;
+        uint8_t r_m_index = next_byte & 0b00000111;
+
+        uint8_t mod = (next_byte & 0b11000000) >> 6;
+
+        switch (mod) {
+        case 0:
+          // memory mode, no displacement
+        case 1:
+          // memory mode, 8-bit displacement
+        case 2:
+          // memory mode, 16-bit displacement
+        case 3:
+          // register to register
           const char *(*register_table)[8] =
               isByteOp(byte) ? &byte_reg : &word_reg;
-
-          uint8_t reg_index = (next_byte & 0b00111000) >> 3;
-          uint8_t r_m_index = next_byte & 0b00000111;
 
           const char *r_m = (*register_table)[r_m_index];
           const char *reg = (*register_table)[reg_index];
@@ -104,9 +116,11 @@ int main(int argc, char *argv[]) {
           }
           strcat(instruction, "\n");
         }
-      } else
-        strcat(instruction, "tbd\n");
-
+      } else {
+        char str[4];
+        std::snprintf(str, sizeof(str), "%02x\n", byte);
+        strcat(instruction, str);
+      }
       printf("%s", instruction);
     }
 
@@ -117,18 +131,12 @@ int main(int argc, char *argv[]) {
         return 1;
       }
       if (feof(f)) {
-        printf("\n");
-        display_success_badge();
-        printf("Finished reading file.\n");
         break;
       }
     }
   }
 
   fclose(f);
-
-  printf("\n  filesize: %zu\n  total_bytes_read: %zu\n\n", filesize,
-         total_bytes_read);
 
   return 0;
 }
