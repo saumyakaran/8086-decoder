@@ -2,7 +2,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <filesystem>
 #include <string_view>
 
 void display_success_badge() { printf("\n[\033[1;32mSUCCESS\033[0m]: "); }
@@ -57,8 +56,11 @@ int main(int argc, char *argv[]) {
   size_t filesize = ftell(f);
   rewind(f);
 
-  auto name = std::filesystem::path(argv[1]).filename();
-  printf("; %s disassembly:\n\nbits 16\n\n", name.c_str());
+  const char *name = strrchr(argv[1], '/');
+  if (!name)
+    name = strrchr(argv[1], '\\');
+  name = name ? name + 1 : argv[1];
+  printf("; %s disassembly:\n\nbits 16\n\n", name);
 
   uint8_t buf[4096]{};
   constexpr size_t buf_size = sizeof(buf);
