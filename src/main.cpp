@@ -78,7 +78,8 @@ int main(int argc, char *argv[]) {
       char instruction[64]{};
       // TODO: Implement a write utility using a cursor for better
       // performance, strcat scans the instruction for `\0` everytime it is
-      // called which is unnecessary overhead
+      // called which is unnecessary overhead + can cause buffer overflow,
+      // although safe in the current implementation
       if (isMov(byte)) {
         strcat(instruction, "mov ");
 
