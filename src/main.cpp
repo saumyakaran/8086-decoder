@@ -73,8 +73,12 @@ int main(int argc, char *argv[]) {
     size_t cursor{0};
     while (cursor < bytes_read) {
       const uint8_t byte = buf[cursor];
-      cursor += 1;
+      cursor++;
 
+      // trying to read next_byte is UB
+      if (cursor >= bytes_read) {
+        break;
+      }
       char instruction[64]{};
       // TODO: Implement a write utility using a cursor for better
       // performance, strcat scans the instruction for `\0` everytime it is
@@ -84,7 +88,7 @@ int main(int argc, char *argv[]) {
         strcat(instruction, "mov ");
 
         const uint8_t next_byte = buf[cursor];
-        cursor += 1;
+        cursor++;
 
         const char *byte_reg[8]{"al", "cl", "dl", "bl", "ah", "ch", "dh", "bh"};
         const char *word_reg[8]{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"};
